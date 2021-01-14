@@ -1,0 +1,43 @@
+This text file seeks to explain how one can deploy their Flask apps on an AWS EC2 instance.
+We will be considering port 8080 as the port being used for convenience.
+
+1) Launch an EC2 instance and choose the settings according to your requirements. Ensure VPC, internet gateway and route tables are proper, and the subnet being used isn't private. In security groups, enter inbound rules for ports 22 (SSH), 80 (HTTP), 443 (HTTPS) and 8080/any non reserved number (CUSTOM TCP). The app will be accessible via this custom TCP port and SSH will be used to connect to the EC2 from terminal. Download the key pair.
+
+2) SSH into the EC2 using the .pem file and use ssh-add ./pem_name.pem
+
+3) Make sure Python, Flask and tmux are installed on the EC2. 
+ sudo apt install python3 python3-pip tmux htop - tmux install
+ sudo apt install python3 - python (usually already installed)
+ pip3 install flask - flask
+
+4) Transfer flask project files from local machine to EC2 using rsync.
+
+	eg - rsync -rv -e "ssh -i flask-app.pem" /home/njeyepatch/Computer-Science/flask-test/ ubuntu@ec2-18-220-215-160.us-east-2.compute.amazonaws.com:/home/ubuntu/deployedapp/
+
+	Here use the public IPv4 address of the EC2. -rv is used to copy entire folder. 
+	
+	rsync -avz -e "ssh -i flask-app.pem" /home/njeyepatch/Computer-Science/flask-test/main.py ubuntu@ec2-18-220-215-160.us-east-2.compute.amazonaws.com:/home/ubuntu/deployedapp/main.py
+
+	This is used to copy single files.
+
+	We can alternatively add the files to a cloud bucket and then access them from the EC2 directly.
+
+5) tmux is used to create a new session, where the app runs live. This ensures it will run even after closing the terminal window for the EC2.
+
+tmux new -s mytestapp (name of session)
+
+6) pip3 install -r requirements.txt - This ensures that all the required packages are installed on the EC2. If flask isn't installed via this, we can manually install using pip3 install flask.
+
+7) source virtual/bin/activate can be used to enter the virtual environment.
+
+8) use export FLASK_ENV = development and export FLASK_APP = "main.py" to set environment variables in order to run app. 
+
+9) use the command flask run --host=0.0.0.0 --port=8080. This host and port number is whatever we have mentioned in main.py. 
+
+10) Ctrl B + D can be used to exit the tmux session and leave it running in the background. tmux ls can be used to see running sessions.
+tmux attach -t mytestapp can be used to make changes in existing sessions.
+tmux kill-server can be used to kill all tmux open sessions.
+tmux kill-session -t mytestapp can be used to kill particular tmux open sessions.
+
+11) Your app is now deployed. Access it on http://<instance public ipv4 address>:8080/
+
